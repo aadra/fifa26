@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
- <!-- Google tag (gtag.js) -->
+<!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-DZ126NSHEQ"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
@@ -141,7 +141,8 @@ const ZONE_IDS=['N-OUT','N-MID','N-LOW','E-OUT','E-MID','E-LOW',
 const canvas=document.getElementById('c');
 const ctx=canvas.getContext('2d');
 let W=0,H=0,ST={},PV={};
-let oCells=[],pCells=[];
+let oCells=[],pCells=[],tifoCells=[];
+let ovCW=14,ovCH=16; // measured kaomoji-cell size (set in buildOvalCells)
 let pCrowdMood='idle';
 const zSt={};ZONE_IDS.forEach(z=>zSt[z]='idle');
 
@@ -198,11 +199,25 @@ function getZone(px,py){
 }
 function buildOvalCells(){
  oCells=[];
- const cW=14,cH=16,s=ST;
+ ctx.font='bold 9px "Courier New", monospace';
+ const allFaces=IDLE.concat(TENSE,CHEER,SAD);
+ let maxW=0;
+ allFaces.forEach(f=>{const w=ctx.measureText(f).width;if(w>maxW)maxW=w;});
+ ovCW=Math.ceil(maxW)+6;ovCH=19;
+ const cW=ovCW,cH=ovCH,s=ST;
  for(let y=s.oY+3;y<s.oY+s.oH-3;y+=cH)
    for(let x=s.oX+3;x<s.oX+s.oW-3;x+=cW){
      const z=getZone(x,y);
      if(z) oCells.push({x,y,zone:z,ic:IDLE[Math.floor(Math.random()*IDLE.length)],ph:(x + y) * 0.02 + Math.random()*0.2});
+   }
+}
+function buildTifoCells(){
+ tifoCells=[];
+ const cW=7,cH=8,s=ST; // small, dense grid — tifo blocks don't need face-width spacing
+ for(let y=s.oY+2;y<s.oY+s.oH-2;y+=cH)
+   for(let x=s.oX+2;x<s.oX+s.oW-2;x+=cW){
+     const z=getZone(x,y);
+     if(z) tifoCells.push({x,y,zone:z,ph:(x + y) * 0.02 + Math.random()*0.2});
    }
 }
 function calcPV(){
@@ -230,7 +245,7 @@ function resize(){
  const g=document.getElementById('game');
  W=g.clientWidth||window.innerWidth;H=g.clientHeight||window.innerHeight;
  canvas.width=W;canvas.height=H;
- ST=calcST();PV=calcPV();buildOvalCells();buildPerspCells();
+ ST=calcST();PV=calcPV();buildOvalCells();buildTifoCells();buildPerspCells();
 }
 
 // ══════════════════════════════════════════
@@ -248,6 +263,18 @@ function drawStadium(){
  ctx.beginPath();ctx.moveTo(pcx,pY+4);ctx.lineTo(pcx,pY+pH-4);ctx.stroke();
  ctx.beginPath();ctx.arc(pcx,pcy,pH*.15,0,Math.PI*2);ctx.stroke();
  ctx.fillStyle=P.pitchLine;ctx.beginPath();ctx.arc(pcx,pcy,2,0,Math.PI*2);ctx.fill();
+ ctx.font = `bold ${Math.round(pH*0.075)}px "Space Mono", monospace`;
+ctx.fillStyle = "#FFFFFF";
+
+ctx.fillText(`${GS.team.f} ${GS.team.n.toUpperCase()}`, pcx, pcy + pH*0.02);
+
+ctx.font = `bold ${Math.round(pH*0.05)}px "Space Mono", monospace`;
+ctx.fillStyle = "#FFD966";
+ctx.fillText("VS", pcx, pcy + pH*0.10);
+
+ctx.font = `bold ${Math.round(pH*0.075)}px "Space Mono", monospace`;
+ctx.fillStyle = "#FFFFFF";
+ctx.fillText("🇮🇳 INDIA", pcx, pcy + pH*0.18);
 }
 
 function pickChar(arr, t, ph, speed = 0.0005) {
@@ -255,28 +282,34 @@ function pickChar(arr, t, ph, speed = 0.0005) {
     return arr[(index + arr.length) % arr.length];
 }
 function drawOvalCrowd(){
- const t=GS.now,s=ST,isTifo=GS.stage===2;
- const winner=GS.pen.userScore>GS.pen.aiScore?GS.team:GS.pen.aiScore>GS.pen.userScore?INDIA:null;
- ctx.textBaseline='middle';
+ // Intro crowd: one clear, bold kaomoji per seat
+ const t=GS.now;
+ ctx.textBaseline='middle';ctx.textAlign='center';
  for(const c of oCells){
-   let color,ch,alpha=0.93,fs='9px "Courier New",monospace';
-   if(isTifo){
-     // Entire stadium crowd pulses in the winner's colours
-     const tc1=winner?winner.p:P.gold,tc2=winner?winner.s:'#FFB800';
-     color=Math.sin(t*.004+c.ph*3)>0?tc1:tc2;
-     ch=pickChar(TIFO,t,c.ph);fs='9px "Courier New",monospace';
-   } else {
-     const st=zSt[c.zone];
-     if(st==='idle'){color=P.crowdIdle;ch=c.ic;alpha=Math.sin(t*.0004+c.ph)*.18+0.52;}
-     else if(st==='team'){color=Math.sin(t*.005+c.ph)>0?GS.team.p:GS.team.s;ch=pickChar(CHEER,t,c.ph,0.0035);}
-     else if(st==='india'){color=Math.sin(t*.005+c.ph)>0?'#FF9933':'#138808';ch=pickChar(CHEER,t,c.ph,0.0035);}
-     else if(st==='cheer'){color=P.gold;ch=pickChar(CHEER,t,c.ph,0.0035);}
-     else if(st==='ai_cheer'){color='#FF9933';ch=pickChar(CHEER,t,c.ph,0.0035);}
-     else{color=P.crowdIdle;ch=c.ic;alpha=0.5;}
-   }
-   ctx.globalAlpha=alpha;ctx.font=fs;ctx.fillStyle=color;ctx.fillText(ch,c.x,c.y);
+   let color,ch,alpha=0.93;
+   const st=zSt[c.zone];
+   if(st==='idle'){color=P.crowdIdle;ch=c.ic;alpha=Math.sin(t*.0004+c.ph)*.18+0.52;}
+   else if(st==='team'){color=Math.sin(t*.0012+c.ph)>0?GS.team.p:GS.team.s;ch=pickChar(CHEER,t,c.ph,0.0012);}
+   else if(st==='india'){color=Math.sin(t*.0012+c.ph)>0?'#FF9933':'#138808';ch=pickChar(CHEER,t,c.ph,0.0012);}
+   else if(st==='cheer'){color=P.gold;ch=pickChar(CHEER,t,c.ph,0.0035);}
+   else if(st==='ai_cheer'){color='#FF9933';ch=pickChar(CHEER,t,c.ph,0.0035);}
+   else{color=P.crowdIdle;ch=c.ic;alpha=0.5;}
+   ctx.globalAlpha=alpha;ctx.font='bold 9px "Courier New",monospace';ctx.fillStyle=color;ctx.fillText(ch,c.x,c.y);
  }
- ctx.globalAlpha=1;
+ ctx.globalAlpha=1;ctx.textAlign='left';
+}
+function drawTifoCrowd(){
+ // Tifo reveal: dense pulsing block-crowd in the winner's colours
+ const t=GS.now;
+ const winner=GS.pen.userScore>GS.pen.aiScore?GS.team:GS.pen.aiScore>GS.pen.userScore?INDIA:null;
+ const tc1=winner?winner.p:P.gold,tc2=winner?winner.s:'#FFB800';
+ ctx.textBaseline='middle';ctx.textAlign='center';ctx.font='7px "Courier New",monospace';
+ for(const c of tifoCells){
+   ctx.globalAlpha=0.93;
+   ctx.fillStyle=Math.sin(t*.004+c.ph*3)>0?tc1:tc2;
+   ctx.fillText(pickChar(TIFO,t,c.ph),c.x,c.y);
+ }
+ ctx.globalAlpha=1;ctx.textAlign='left';
 }
 
 // ══════════════════════════════════════════
@@ -433,7 +466,7 @@ function drawPenAnim(){
  const kx=gL+gW/2;
  const kTarget=pen.anim.keeperDived==='L'?gL+22:pen.anim.keeperDived==='R'?gR-22:kx;
  const kx2=lerp(kx,kTarget,easeIn(Math.min(t*2,1)));
- ctx.fillStyle=P.gold;ctx.font='bold 18px "Courier New",monospace';
+ ctx.fillStyle=P.gold;ctx.font='bold 16px "Courier New",monospace';
  ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('[GK]',kx2,gB-10);
  ctx.textAlign='left';ctx.textBaseline='alphabetic';
 }
@@ -539,7 +572,7 @@ function render(ts){
    if(!GS.introStart) GS.introStart=ts;
    ctx.fillStyle='#1A3A38';ctx.fillRect(0,0,W,H);
    drawStadium();drawOvalCrowd();
-   if(ts-GS.introStart>2400){GS.stage=1;resetZ();pCrowdMood='tense';initPenalty();}
+   if(ts-GS.introStart>3200){GS.stage=1;resetZ();pCrowdMood='tense';initPenalty();}
  } else if(GS.stage===1){
    ctx.fillStyle=P.bg;ctx.fillRect(0,0,W,H); // dark base
    drawPerspCrowd();  // kaomoji everywhere (pitch area will be overlaid)
@@ -550,7 +583,7 @@ function render(ts){
    tickPenalty(ts);
  } else if(GS.stage===2){
    drawTifoScreen();   // yellow bg + stadium shape
-   drawOvalCrowd();    // pulsing winner-colour crowd
+   drawTifoCrowd();    // dense pulsing winner-colour crowd
    drawTifoPitchFX();  // fireworks + winner name over the pitch
    //drawTifoScoreBar(); // score below trophy
    tickTifo(ts);
