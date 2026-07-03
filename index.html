@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>FIFA WC 2026 · MetLife</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Space Mono','Courier New',monospace;background:#5BBCBA;color:#0A3534;
+ overflow:hidden;width:100vw;height:100vh;user-select:none;-webkit-user-select:none;
+ touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+#s1{position:fixed;inset:0;overflow-y:auto;padding:20px 14px 90px;
+ display:flex;flex-direction:column;align-items:center;
+ background:linear-gradient(160deg,#7ECFCD 0%,#55B5B3 60%,#44AAAA 100%)}
+.s1-eye{font-size:8px;letter-spacing:3px;color:#1A5E5C;text-transform:uppercase;margin-bottom:6px;text-align:center}
+.s1-title{font-size:22px;font-weight:700;color:#111;margin-bottom:3px;text-align:center}
+.s1-sub{font-size:10px;color:#1A5E5C;margin-bottom:20px;text-align:center}
+.flag-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;width:100%;max-width:700px}
+.flag-btn{background:rgba(255,255,255,0.28);border:1px solid rgba(0,0,0,0.1);border-radius:8px;
+ padding:10px 4px;cursor:pointer;text-align:center;transition:all .12s;font-family:inherit;color:#0A3534}
+.flag-btn:hover,.flag-btn:active{background:rgba(255,229,0,.45);border-color:#FFE500;transform:scale(1.05)}
+.f-em{font-size:20px;display:block;margin-bottom:3px;line-height:1}
+.f-nm{font-size:6px;color:#1A5E5C;line-height:1.3}
+@media(max-width:440px){.flag-grid{grid-template-columns:repeat(4,1fr)}.f-em{font-size:17px}}
+#game{position:fixed;inset:0;display:none}
+canvas{position:absolute;inset:0;width:100%;height:100%}
+#hud{position:absolute;top:0;left:0;right:0;height:46px;
+ display:flex;align-items:center;justify-content:space-between;padding:0 14px;
+ z-index:20;pointer-events:none;
+ background:linear-gradient(180deg,rgba(5,20,18,.94) 70%,transparent)}
+#h-team{font-size:11px;font-weight:700;color:#E0FFFD;min-width:80px}
+#h-center{text-align:center}
+#h-score{font-size:20px;font-weight:700;color:#FFE500;line-height:1}
+#h-stage{font-size:7px;letter-spacing:2px;color:#3A8A88;margin-top:1px}
+#h-kicks{font-size:10px;color:#3A8A88;text-align:right;min-width:80px}
+#flash{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+ text-align:center;z-index:40;pointer-events:none;opacity:0;transition:opacity .2s}
+.f-main{font-size:50px;font-weight:700;text-shadow:0 0 24px currentColor}
+/* end screen — score on top, button below */
+#end-ui{position:absolute;bottom:12px;left:0;right:0;display:none;
+ flex-direction:column;align-items:center;gap:8px;z-index:30;pointer-events:auto}
+#final-score-txt{font-size:13px;font-weight:700;color:#0A3534;font-family:'Space Mono',monospace;
+ background:rgba(255,255,210,0.96);padding:7px 16px;border-radius:9px;
+ border:2px solid #90BCBA;text-align:center;max-width:90%;line-height:1.5}
+.cta-btn{background:#FFE500;color:#0A3534;border:2px solid #0A3534;border-radius:10px;
+ padding:10px 22px;font-size:11px;font-weight:700;font-family:inherit;cursor:pointer;
+ letter-spacing:1px;transition:all .1s;pointer-events:auto}
+.cta-btn:hover{background:#FFF280;transform:scale(1.04)}
+#s3-cta{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);
+ text-align:center;z-index:30;display:none}
+.cta-lbl{font-size:8px;letter-spacing:2px;color:#3A8A88;margin-bottom:8px}
+#lgate{position:fixed;inset:0;background:linear-gradient(135deg,#5DB9B7,#44AAAA);z-index:100;
+ display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px}
+.lg-ph{font-size:52px;animation:tip 1.6s ease-in-out infinite}
+@keyframes tip{0%,100%{transform:rotate(0deg)}50%{transform:rotate(90deg)}}
+.lg-t{font-size:14px;font-weight:700;color:#111}.lg-s{font-size:10px;color:#1A5E5C}
+</style>
+</head>
+<body>
+
+<div id="s1">
+ <div class="s1-eye">FIFA World Cup 2026™ · MetLife Stadium · New Jersey</div>
+ <h1 class="s1-title">PICK YOUR NATION</h1>
+ <p class="s1-sub">You vs India 🇮🇳 · 5 kicks each</p>
+ <div id="flag-grid" class="flag-grid"></div>
+</div>
+
+<div id="game">
+ <canvas id="c"></canvas>
+ <div id="hud">
+   <div id="h-team">—</div>
+   <div id="h-center"><div id="h-score">0 – 0</div><div id="h-stage">PENALTY SHOOTOUT</div></div>
+   <div id="h-kicks">KICK 1/5</div>
+ </div>
+ <div id="flash"><div id="fm" class="f-main"></div></div>
+ <div id="s3-cta">
+   <div class="cta-lbl">SHOOTOUT COMPLETE</div>
+   <button class="cta-btn" onclick="startTifo()">🏆 REVEAL THE TIFO</button>
+ </div>
+ <div id="end-ui">
+   <div id="final-score-txt"></div>
+   <button class="cta-btn" onclick="location.reload()">↺ PLAY AGAIN</button>
+ </div>
+</div>
+
+<div id="lgate">
+ <div class="lg-ph">📱</div>
+ <div class="lg-t">Rotate to Landscape</div>
+ <div class="lg-s">The MetLife experience needs the full width</div>
+</div>
+
+<script>
+'use strict';
+
+const INDIA={n:'India',f:'🇮🇳',p:'#FF9933',s:'#138808'};
+
+const TEAMS=[
+{n:'United States',f:'🇺🇸',p:'#002868',s:'#BF0A30'},{n:'Mexico',f:'🇲🇽',p:'#006847',s:'#CE1126'},
+  {n:'Canada',f:'🇨🇦',p:'#FF0000',s:'#FFFFFF'},{n:'Argentina',f:'🇦🇷',p:'#74ACDF',s:'#FFFFFF'},
+  {n:'Brazil',f:'🇧🇷',p:'#009C3B',s:'#FFDF00'},{n:'Colombia',f:'🇨🇴',p:'#FCD116',s:'#003087'},
+  {n:'Paraguay',f:'🇵🇾',p:'#D52B1E',s:'#0038A8'},
+  {n:'Belgium',f:'🇧🇪',p:'#EF3340',s:'#111111'},
+  {n:'England',f:'🏴󠁧󠁢󠁥󠁮󠁧󠁿',p:'#CF142B',s:'#FFFFFF'},
+  {n:'France',f:'🇫🇷',p:'#002395',s:'#ED2939'},
+  {n:'Norway',f:'🇳🇴',p:'#EF2B2D',s:'#003087'},
+  {n:'Portugal',f:'🇵🇹',p:'#006600',s:'#FF0000'},
+  {n:'Spain',f:'🇪🇸',p:'#AA151B',s:'#F1BF00'},
+  {n:'Switzerland',f:'🇨🇭',p:'#FF0000',s:'#FFFFFF'},
+  {n:'Australia',f:'🇦🇺',p:'#00247D',s:'#FFFFFF'},
+  {n:'Cabo Verde',f:'🇨🇻',p:'#003893',s:'#CF2027'},
+  {n:'Egypt',f:'🇪🇬',p:'#CE1126',s:'#FFFFFF'},
+  {n:'Ghana',f:'🇬🇭',p:'#006B3F',s:'#FCD116'},{n:'Morocco',f:'🇲🇦',p:'#C1272D',s:'#006233'},
+  {n:'New Zealand',f:'🇳🇿',p:'#00247D',s:'#CC142B'}
+];
+
+const P={bg:'#0C1814',pitch:'#1B5E20',pitchDark:'#154818',pitchLine:'#26A826',
+ crowdIdle:'#2A6A68',cat3:'#1A5E5C',cat2:'#237E7C',cat1:'#339C9A',
+ gold:'#FFE500',green:'#00C853',red:'#E53935'};
+
+const IDLE =['(•‿•)','(・_・)','(•ᴗ•)'];
+const TENSE=['(⊙_⊙)','(・_・)','(°ロ°)','(・_・)'];
+const CHEER=['ヽ(•‿•)ノ','＼(^o^)／','٩(ˊᗜˋ*)و'];
+const SAD  =['(>_<)','(︶︹︺)','(•︵•)'];
+const TIFO =['▓','▒','░','▓','▒'];
+
+const TG_COLS=12,TG_ROWS=23;
+
+const ZONE_IDS=['N-OUT','N-MID','N-LOW','E-OUT','E-MID','E-LOW',
+               'S-OUT','S-MID','S-LOW','W-OUT','W-MID','W-LOW'];
+const canvas=document.getElementById('c');
+const ctx=canvas.getContext('2d');
+let W=0,H=0,ST={},PV={};
+let oCells=[],pCells=[];
+let pCrowdMood='idle';
+const zSt={};ZONE_IDS.forEach(z=>zSt[z]='idle');
+
+let GS={stage:0,team:null,now:0,introStart:0,
+ pen:{kicks:[],userScore:0,aiScore:0,phase:'aim',anim:null,
+      animStart:0,animDur:920,resultStart:0,resultDur:1100,
+      indiaStart:0,indiaDur:1700},
+ tifo:{phase:'idle',row:0,lastRow:0,ROW_MS:155,done:false}};
+
+// ══════════════════════════════════════════
+// GEOMETRY — discorectangle stadium
+// (straight N/S long sides, curved E/W short ends)
+// ══════════════════════════════════════════
+function stadPath(ct,x,y,w,h){
+ const r=h/2,cy=y+r;
+ ct.beginPath();
+ ct.moveTo(x+r,y);
+ ct.lineTo(x+w-r,y);
+ ct.arc(x+w-r,cy,r,-Math.PI/2,Math.PI/2);
+ ct.lineTo(x+r,y+h);
+ ct.arc(x+r,cy,r,Math.PI/2,Math.PI*1.5);
+ ct.closePath();
+}
+function inStad(px,py,x,y,w,h){
+ const r=h/2,cy=y+r;
+ if(py<y||py>y+h) return false;
+ if(px>=x+r&&px<=x+w-r) return true;
+ if(px<x+r) return(px-(x+r))**2+(py-cy)**2<=r*r;
+ return(px-(x+w-r))**2+(py-cy)**2<=r*r;
+}
+function calcST(){
+ const HUD=46,PADX=5,PADY=5,BOT=72;
+ const gW=W-PADX*2,gH=H-HUD-PADY-BOT;
+ const d=gH*0.092,dh=d*0.55;
+ const oX=PADX,oY=HUD+PADY,oW=gW,oH=gH;
+ const mX=oX+dh,mY=oY+d,mW=oW-2*dh,mH=oH-2*d;
+ const iX=mX+dh,iY=mY+d,iW=mW-2*dh,iH=mH-2*d;
+ const pX=iX+dh*1.1,pY=iY+d*1.1,pW=iW-2*dh*1.1,pH=iH-2*d*1.1;
+ return{oX,oY,oW,oH,mX,mY,mW,mH,iX,iY,iW,iH,pX,pY,pW,pH};
+}
+function getZone(px,py){
+ const s=ST;
+ if(!inStad(px,py,s.oX,s.oY,s.oW,s.oH)) return null;
+ if(inStad(px,py,s.pX,s.pY,s.pW,s.pH)) return null;
+ let tier;
+ if(!inStad(px,py,s.mX,s.mY,s.mW,s.mH)) tier='OUT';
+ else if(!inStad(px,py,s.iX,s.iY,s.iW,s.iH)) tier='MID';
+ else tier='LOW';
+ const pcx=s.pX+s.pW/2,pcy=s.pY+s.pH/2;
+ const dx=px-pcx,dy=py-pcy;
+ const nx=dx/(s.pW*.6),ny=dy/(s.pH*.6);
+ const side=Math.abs(nx)>Math.abs(ny)?(nx>0?'E':'W'):(ny>0?'S':'N');
+ return side+'-'+tier;
+}
+function buildOvalCells(){
+ oCells=[];
+ const cW=14,cH=16,s=ST;
+ for(let y=s.oY+3;y<s.oY+s.oH-3;y+=cH)
+   for(let x=s.oX+3;x<s.oX+s.oW-3;x+=cW){
+     const z=getZone(x,y);
+     if(z) oCells.push({x,y,zone:z,ic:IDLE[Math.floor(Math.random()*IDLE.length)],ph:(x + y) * 0.02 + Math.random()*0.2});
+   }
+}
+function calcPV(){
+ const HUD=46,gH=H-HUD,hY=HUD+gH*.50;
+ const gw=W*.46,gh=gH*.26,gl=(W-gw)/2;
+ return{horizY:hY,
+   pitchFarLeft:W*.18,pitchFarRight:W*.82,
+   pitchNearLeft:-W*.12,pitchNearRight:W*1.12,pitchNearY:H-28,
+   goalLeft:gl,goalRight:gl+gw,goalTop:hY-gh,goalBottom:hY,
+   goalWidth:gw,goalHeight:gh};
+}
+
+// Kaomoji crowd covers ENTIRE canvas (zone='team' on left half, 'india' on right half)
+function buildPerspCells(){
+ pCells=[];
+ const cW=34,cH=18;
+ for(let y=52;y<H-4;y+=cH)
+   for(let x=2;x<W-2;x+=cW)
+     pCells.push({x,y,
+       zone:x<W/2?'team':'india',
+       ic:IDLE[Math.floor(Math.random()*IDLE.length)],
+       ph:(x + y) * 0.02 + Math.random()*0.2});
+}
+function resize(){
+ const g=document.getElementById('game');
+ W=g.clientWidth||window.innerWidth;H=g.clientHeight||window.innerHeight;
+ canvas.width=W;canvas.height=H;
+ ST=calcST();PV=calcPV();buildOvalCells();buildPerspCells();
+}
+
+// ══════════════════════════════════════════
+// DRAW — TOP-DOWN STADIUM (intro + tifo)
+// ══════════════════════════════════════════
+function drawStadium(){
+ const s=ST;
+ ctx.fillStyle=P.cat3;stadPath(ctx,s.oX,s.oY,s.oW,s.oH);ctx.fill();
+ ctx.fillStyle=P.cat2;stadPath(ctx,s.mX,s.mY,s.mW,s.mH);ctx.fill();
+ ctx.fillStyle=P.cat1;stadPath(ctx,s.iX,s.iY,s.iW,s.iH);ctx.fill();
+ ctx.fillStyle=P.pitch;stadPath(ctx,s.pX,s.pY,s.pW,s.pH);ctx.fill();
+ const{pX,pY,pW,pH}=s,pcx=pX+pW/2,pcy=pY+pH/2;
+ ctx.strokeStyle=P.pitchLine;ctx.lineWidth=0.9;
+ ctx.strokeRect(pX+4,pY+4,pW-8,pH-8);
+ ctx.beginPath();ctx.moveTo(pcx,pY+4);ctx.lineTo(pcx,pY+pH-4);ctx.stroke();
+ ctx.beginPath();ctx.arc(pcx,pcy,pH*.15,0,Math.PI*2);ctx.stroke();
+ ctx.fillStyle=P.pitchLine;ctx.beginPath();ctx.arc(pcx,pcy,2,0,Math.PI*2);ctx.fill();
+}
+
+function pickChar(arr, t, ph, speed = 0.0005) {
+    const index = Math.floor(((t * speed) + ph) % arr.length);
+    return arr[(index + arr.length) % arr.length];
+}
+function drawOvalCrowd(){
+ const t=GS.now,s=ST,isTifo=GS.stage===2;
+ const winner=GS.pen.userScore>GS.pen.aiScore?GS.team:GS.pen.aiScore>GS.pen.userScore?INDIA:null;
+ ctx.textBaseline='middle';
+ for(const c of oCells){
+   let color,ch,alpha=0.93,fs='9px "Courier New",monospace';
+   if(isTifo){
+     // Entire stadium crowd pulses in the winner's colours
+     const tc1=winner?winner.p:P.gold,tc2=winner?winner.s:'#FFB800';
+     color=Math.sin(t*.004+c.ph*3)>0?tc1:tc2;
+     ch=pickChar(TIFO,t,c.ph);fs='9px "Courier New",monospace';
+   } else {
+     const st=zSt[c.zone];
+     if(st==='idle'){color=P.crowdIdle;ch=c.ic;alpha=Math.sin(t*.0004+c.ph)*.18+0.52;}
+     else if(st==='team'){color=Math.sin(t*.005+c.ph)>0?GS.team.p:GS.team.s;ch=pickChar(CHEER,t,c.ph,0.0035);}
+     else if(st==='india'){color=Math.sin(t*.005+c.ph)>0?'#FF9933':'#138808';ch=pickChar(CHEER,t,c.ph,0.0035);}
+     else if(st==='cheer'){color=P.gold;ch=pickChar(CHEER,t,c.ph,0.0035);}
+     else if(st==='ai_cheer'){color='#FF9933';ch=pickChar(CHEER,t,c.ph,0.0035);}
+     else{color=P.crowdIdle;ch=c.ic;alpha=0.5;}
+   }
+   ctx.globalAlpha=alpha;ctx.font=fs;ctx.fillStyle=color;ctx.fillText(ch,c.x,c.y);
+ }
+ ctx.globalAlpha=1;
+}
+
+// ══════════════════════════════════════════
+// DRAW — PERSPECTIVE PENALTY VIEW
+// ══════════════════════════════════════════
+
+
+// Determine colour based on crowd zone (left=team, right=india) and mood
+function pMoodColor(c,t){
+ const isIndia=c.zone==='india';
+ const teamColor=Math.sin(t*.005+c.ph)>0?GS.team.p:GS.team.s;
+ const indiaColor=Math.sin(t*.005+c.ph)>0?'#FF9933':'#138808';
+ switch(pCrowdMood){
+   case 'tense':    return P.crowdIdle;
+   case 'userGoal': return isIndia?'#2A6A68':teamColor;
+   case 'userMiss': return isIndia?indiaColor:'#2A6A68';
+   case 'indiaGoal':return isIndia?indiaColor:'#2A6A68';
+   case 'indiaMiss':return isIndia?'#2A6A68':teamColor;
+   default:         return isIndia?indiaColor:teamColor;
+ }
+}
+function pMoodChar(c,t){
+ const isIndia=c.zone==='india';
+ switch(pCrowdMood){
+   case 'tense':    return pickChar(TENSE,t,c.ph, 0.0003);
+   case 'userGoal': return isIndia?pickChar(SAD,t,c.ph,0.00015):pickChar(CHEER,t,c.ph,0.00035);
+   case 'userMiss': return isIndia?pickChar(CHEER,t,c.ph,0.00035):pickChar(SAD,t,c.ph,0.00015);
+   case 'indiaGoal':return isIndia?pickChar(CHEER,t,c.ph,0.00035):pickChar(SAD,t,c.ph,0.00015);
+   case 'indiaMiss':return isIndia?pickChar(SAD,t,c.ph,0.00015):pickChar(CHEER,t,c.ph,0.00035);
+   default:         return pickChar(TENSE,t,c.ph,0.0003);
+ }
+}
+
+function drawPerspCrowd(){
+ const t=GS.now;
+
+ ctx.font='13px "Noto Sans JP","Segoe UI Emoji","Apple Color Emoji",sans-serif';
+ ctx.textBaseline='middle';
+
+ for(const c of pCells){
+
+   const alpha = pCrowdMood==='idle'
+       ? Math.sin(t*.00025+c.ph)*.04+0.93
+       : 0.93;
+
+   const isSad =
+      (pCrowdMood === 'userGoal'  && c.zone === 'india') ||
+      (pCrowdMood === 'indiaMiss' && c.zone === 'india') ||
+      (pCrowdMood === 'userMiss'  && c.zone !== 'india') ||
+      (pCrowdMood === 'indiaGoal' && c.zone !== 'india');
+
+   // Draw position
+   let x = c.x;
+   let y = c.y;
+
+   // Slump the disappointed crowd
+   if(isSad){
+    y += 4 + Math.sin(c.ph * 7) * 1.5;
+}
+
+   ctx.globalAlpha = alpha;
+   ctx.fillStyle = pMoodColor(c,t);
+
+   ctx.fillText(
+      pMoodChar(c,t),
+      x,
+      y
+   );
+ }
+
+ ctx.globalAlpha = 1;
+}
+
+
+function drawPitch(){
+ const pv=PV;
+ // Opaque green pitch)
+ ctx.save();
+ ctx.beginPath();
+ ctx.moveTo(pv.pitchFarLeft,pv.horizY);ctx.lineTo(pv.pitchFarRight,pv.horizY);
+ ctx.lineTo(W, H);ctx.lineTo(0, H);
+ ctx.closePath();
+ ctx.globalAlpha=1;
+ const grad=ctx.createLinearGradient(0,pv.horizY,0,H);
+ grad.addColorStop(0,P.pitch);grad.addColorStop(.5,P.pitchDark);grad.addColorStop(1,P.pitch);
+ ctx.fillStyle=grad;ctx.fill();
+ ctx.globalAlpha=1;
+ ctx.restore();
+ // Pitch lines at full opacity
+ ctx.strokeStyle=P.pitchLine;ctx.lineWidth=1.5;
+ const nY=pv.pitchNearY;
+ ctx.beginPath();ctx.moveTo(pv.pitchFarLeft,pv.horizY);ctx.lineTo(pv.pitchFarRight,pv.horizY);ctx.stroke();
+ ctx.beginPath();ctx.moveTo(pv.pitchFarLeft,pv.horizY);ctx.lineTo(pv.pitchNearLeft+W*.10,nY);ctx.stroke();
+ ctx.beginPath();ctx.moveTo(pv.pitchFarRight,pv.horizY);ctx.lineTo(pv.pitchNearRight-W*.10,nY);ctx.stroke();
+ const pbT=.28;
+ const pbL=lerp(W*.22,pv.pitchNearLeft+W*.22,pbT);
+ const pbR=lerp(W*.78,pv.pitchNearRight-W*.22,pbT);
+ const pbY=lerp(pv.horizY,nY,pbT);
+ ctx.beginPath();ctx.moveTo(W*.22,pv.horizY);ctx.lineTo(W*.78,pv.horizY);
+ ctx.lineTo(pbR,pbY);ctx.lineTo(pbL,pbY);ctx.closePath();ctx.stroke();
+ const spY=lerp(pv.horizY,nY,.44);
+ ctx.fillStyle=P.pitchLine;ctx.beginPath();ctx.arc(W/2,spY,4,0,Math.PI*2);ctx.fill();
+ if(GS.pen.phase==='aim'){
+   ctx.fillStyle='#FFF';ctx.beginPath();ctx.arc(W/2,spY,6,0,Math.PI*2);ctx.fill();
+   ctx.fillStyle='#555';ctx.font='11px serif';ctx.textAlign='center';ctx.textBaseline='middle';
+   ctx.fillText('⚽',W/2,spY);ctx.textAlign='left';ctx.textBaseline='alphabetic';
+ }
+}
+
+function drawGoal(){
+ const pv=PV,{goalLeft:gL,goalRight:gR,goalTop:gT,goalBottom:gB,goalWidth:gW}=pv;
+ // Net lines (transparent — kaomoji shows through)
+ ctx.strokeStyle='rgba(200,200,200,0.74)';ctx.lineWidth=2;
+ for(let x=gL+20;x<gR;x+=20){ctx.beginPath();ctx.moveTo(x,gT);ctx.lineTo(x,gB);ctx.stroke();}
+ for(let y=gT+18;y<gB;y+=18){ctx.beginPath();ctx.moveTo(gL,y);ctx.lineTo(gR,y);ctx.stroke();}
+ // Posts
+ ctx.strokeStyle='#FFFFFF';ctx.lineWidth=8;
+ ctx.beginPath();ctx.moveTo(gL,gB);ctx.lineTo(gL,gT);ctx.stroke();
+ ctx.beginPath();ctx.moveTo(gR,gB);ctx.lineTo(gR,gT);ctx.stroke();
+ ctx.beginPath();ctx.moveTo(gL,gT);ctx.lineTo(gR,gT);ctx.stroke();
+ ctx.strokeStyle='rgba(255,255,255,0.28)';ctx.lineWidth=2;
+ ctx.beginPath();ctx.moveTo(gL,gB);ctx.lineTo(gR,gB);ctx.stroke();
+ // Aim guide
+ if(GS.pen.phase==='aim'){
+   const mX1=gL+gW/3,mX2=gL+gW*2/3;
+   ctx.strokeStyle='rgba(255,229,0,.85)';ctx.lineWidth=4;ctx.setLineDash([5,5]);
+   ctx.beginPath();ctx.moveTo(mX1,gT);ctx.lineTo(mX1,gB);ctx.stroke();
+   ctx.beginPath();ctx.moveTo(mX2,gT);ctx.lineTo(mX2,gB);ctx.stroke();
+   ctx.setLineDash([]);
+   ctx.fillStyle='rgba(255,229,0,.8)';ctx.font='bold 36px serif';
+   ctx.textAlign='center';ctx.textBaseline='middle';
+   const midY=(gT+gB)/2;
+   ctx.fillText('←',gL+gW*.16,midY);ctx.fillText('↑',gL+gW*.5,midY);ctx.fillText('→',gL+gW*.84,midY);
+   ctx.fillStyle='rgba(255,229,0,.6)';ctx.font='8px "Space Mono",monospace';
+   ctx.fillText('TAP GOAL TO SHOOT',W/2,gT-12);
+   ctx.textAlign='left';ctx.textBaseline='alphabetic';
+ }
+}
+
+function drawPenAnim(){
+ if(GS.pen.phase!=='animating'||!GS.pen.anim) return;
+ const pv=PV,pen=GS.pen;
+ const elapsed=GS.now-pen.animStart,t=Math.min(elapsed/pen.animDur,1),et=easeOut(t);
+ const spY=lerp(pv.horizY,pv.pitchNearY,.44),spX=W/2;
+ const{goalLeft:gL,goalRight:gR,goalTop:gT,goalBottom:gB,goalWidth:gW}=pv;
+ const tX=pen.anim.aimed==='L'?gL+gW*.16:pen.anim.aimed==='R'?gL+gW*.84:gL+gW*.5;
+ const tY=gT+(gB-gT)*.6;
+ const bx=lerp(spX,tX,et),by=lerp(spY,tY,et);
+ ctx.strokeStyle='rgba(255,255,255,0.18)';ctx.lineWidth=1.5;ctx.setLineDash([3,4]);
+ ctx.beginPath();ctx.moveTo(spX,spY);ctx.lineTo(bx,by);ctx.stroke();ctx.setLineDash([]);
+ ctx.fillStyle='#FFF';ctx.beginPath();ctx.arc(bx,by,5,0,Math.PI*2);ctx.fill();
+ ctx.font='10px serif';ctx.textAlign='center';ctx.textBaseline='middle';
+ ctx.fillText('⚽',bx,by);ctx.textAlign='left';ctx.textBaseline='alphabetic';
+ const kx=gL+gW/2;
+ const kTarget=pen.anim.keeperDived==='L'?gL+22:pen.anim.keeperDived==='R'?gR-22:kx;
+ const kx2=lerp(kx,kTarget,easeIn(Math.min(t*2,1)));
+ ctx.fillStyle=P.gold;ctx.font='bold 10px "Courier New",monospace';
+ ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('[GK]',kx2,gB-10);
+ ctx.textAlign='left';ctx.textBaseline='alphabetic';
+}
+
+function drawPerspHUD(){
+ const sbW=W*.28,sbH=18,sbX=W*.36,sbY=48;
+ ctx.fillStyle='rgba(6,14,13,0.88)';ctx.fillRect(sbX,sbY,sbW,sbH);
+ ctx.fillStyle=P.gold;ctx.font='8px "Space Mono",monospace';
+ ctx.textAlign='center';ctx.textBaseline='middle';
+ const uk=GS.pen.kicks.filter(k=>k.isUser).length;
+ ctx.fillText(`MetLife WC 2026 · KICK ${Math.min(uk+1,5)}/5`,sbX+sbW/2,sbY+sbH/2);
+ ctx.textAlign='left';ctx.textBaseline='alphabetic';
+}
+
+// ══════════════════════════════════════════
+// DRAW — TIFO SCREEN
+// ══════════════════════════════════════════
+function drawTifoScreen(){
+ const s=ST;
+ ctx.fillStyle='#FFFFE0';ctx.fillRect(0,0,W,H);
+ // Stadium outline
+ ctx.strokeStyle='#A0C4C2';ctx.lineWidth=2;
+ stadPath(ctx,s.oX,s.oY,s.oW,s.oH);ctx.stroke();
+ // Warm fill inside
+ ctx.save();stadPath(ctx,s.oX,s.oY,s.oW,s.oH);ctx.clip();
+ ctx.fillStyle='#FFF8C0';ctx.fillRect(s.oX,s.oY,s.oW,s.oH);
+ ctx.restore();
+}
+
+// Purple/pink fireworks + winner's name over the pitch during tifo
+function drawTifoPitchFX(){
+ const s=ST,t=GS.now;
+ ctx.save();
+ stadPath(ctx,s.pX,s.pY,s.pW,s.pH);ctx.clip();
+ ctx.fillStyle='#B2D3C3';ctx.fillRect(s.pX,s.pY,s.pW,s.pH);
+
+ const bursts=[
+   {x:s.pX+s.pW*.20,y:s.pY+s.pH*.32,seed:0},
+   {x:s.pX+s.pW*.50,y:s.pY+s.pH*.22,seed:1},
+   {x:s.pX+s.pW*.80,y:s.pY+s.pH*.34,seed:2},
+   {x:s.pX+s.pW*.34,y:s.pY+s.pH*.58,seed:3},
+   {x:s.pX+s.pW*.66,y:s.pY+s.pH*.56,seed:4},
+ ];
+ const CYCLE=1600,RISE=0.12,PARTICLES=24,COLORS=['#C450E0','#FF4FA3','#B450FF','#FF6FC0'];
+ bursts.forEach((f,i)=>{
+   const local=((t+f.seed*320)%CYCLE)/CYCLE;
+   if(local<RISE){
+     const ry=f.y+s.pH*0.28*(1-local/RISE);
+     ctx.globalAlpha=0.9;ctx.fillStyle='#FFEFA8';
+     ctx.beginPath();ctx.arc(f.x,ry,1.6,0,Math.PI*2);ctx.fill();
+   } else {
+     const p=(local-RISE)/(1-RISE);
+     const alpha=Math.max(0,1-p);
+     const R=12+p*(Math.min(s.pW,s.pH)*0.35);
+     for(let k=0;k<PARTICLES;k++){
+       const ang=(Math.PI*2*k)/PARTICLES+f.seed;
+       const px=f.x+Math.cos(ang)*R,py=f.y+Math.sin(ang)*R*0.8;
+       ctx.globalAlpha=alpha*0.9;
+       ctx.fillStyle=COLORS[(k+i)%COLORS.length];
+       ctx.beginPath();ctx.arc(px,py,5,0,Math.PI*2);ctx.fill();
+     }
+   }
+ });
+ ctx.globalAlpha=1;
+
+ const winner=GS.pen.userScore>GS.pen.aiScore?GS.team:GS.pen.aiScore>GS.pen.userScore?INDIA:null;
+ const wName=winner?winner.n.toUpperCase():'DRAW',wFlag=winner?winner.f:'🤝';
+ ctx.textAlign='center';ctx.textBaseline='middle';
+ ctx.font=`bold ${Math.min(64,s.pW*.25)}px "Space Mono",monospace`;
+ ctx.fillStyle='#FF6FC0';
+ ctx.fillText(wFlag,s.pX+s.pW/2,s.pY+s.pH/2-20);
+ ctx.font=`bold ${Math.min(42,s.pW*.30)}px "Space Mono",monospace`;
+ ctx.fillStyle='#F3D9FF';
+ ctx.fillText(wName,s.pX+s.pW/2,s.pY+s.pH/2+35);
+ ctx.textAlign='left';ctx.textBaseline='alphabetic';
+ ctx.restore();
+}
+
+function drawTifoScoreBar(){
+ if(GS.stage!==2||GS.tifo.row<TG_ROWS) return;
+ // Score bar below stadium
+ const s=ST,barY=s.oY+s.oH+6,barH=28;
+ const us=GS.pen.userScore,as=GS.pen.aiScore;
+ const winner=us>as?GS.team:as>us?INDIA:null;
+ const medal=us>as?'🏆':as>us?'':'🤝';
+ ctx.fillStyle='rgba(255,255,200,0.0)';// transparent — yellow bg shows
+ ctx.fillStyle='#111';
+ ctx.font=`bold ${Math.min(14,W*.025)}px "Space Mono",monospace`;
+ ctx.textAlign='center';ctx.textBaseline='middle';
+ ctx.fillText(
+   `${GS.team.f} ${GS.team.n}  ${us} – ${as}  ${INDIA.f} India ${medal}`,
+   W/2,barY+barH/2);
+ ctx.textAlign='left';ctx.textBaseline='alphabetic';
+}
+
+// ══════════════════════════════════════════
+// MAIN LOOP
+// ══════════════════════════════════════════
+function render(ts){
+ GS.now=ts;
+ if(GS.stage===-1){
+   // Brief intro: top-down stadium, split crowd colours
+   if(!GS.introStart) GS.introStart=ts;
+   ctx.fillStyle='#1A3A38';ctx.fillRect(0,0,W,H);
+   drawStadium();drawOvalCrowd();
+   if(ts-GS.introStart>2400){GS.stage=1;resetZ();pCrowdMood='tense';initPenalty();}
+ } else if(GS.stage===1){
+   ctx.fillStyle=P.bg;ctx.fillRect(0,0,W,H); // dark base
+   drawPerspCrowd();  // kaomoji everywhere (pitch area will be overlaid)
+   drawPitch();       // green over pitch portion
+   drawGoal();
+   drawPenAnim();
+   drawPerspHUD();
+   tickPenalty(ts);
+ } else if(GS.stage===2){
+   drawTifoScreen();   // yellow bg + stadium shape
+   drawOvalCrowd();    // pulsing winner-colour crowd
+   drawTifoPitchFX();  // fireworks + winner name over the pitch
+   //drawTifoScoreBar(); // score below trophy
+   tickTifo(ts);
+ }
+ requestAnimationFrame(render);
+}
+
+// ══════════════════════════════════════════
+// TEAM SELECT
+// ══════════════════════════════════════════
+function buildGrid(){
+ const g=document.getElementById('flag-grid');
+ TEAMS.forEach((t,i)=>{
+   const b=document.createElement('div');b.className='flag-btn';
+   b.innerHTML=`<span class="f-em">${t.f}</span><span class="f-nm">${t.n}</span>`;
+   b.onclick=()=>pickTeam(i);g.appendChild(b);
+ });
+}
+function pickTeam(i){
+ GS.team=TEAMS[i];
+ document.getElementById('s1').style.display='none';
+ document.getElementById('game').style.display='block';
+ document.getElementById('h-team').textContent=GS.team.f+' '+GS.team.n;
+ resize();checkOrientation();
+
+ // Intro: N+W side = player's team, S+E side = India
+ setZ(['N-OUT','N-MID','N-LOW','W-OUT','W-MID','W-LOW'],'team');
+ setZ(['S-OUT','S-MID','S-LOW','E-OUT','E-MID','E-LOW'],'india');
+ GS.stage=-1;GS.introStart=0;
+ requestAnimationFrame(render);
+ if(screen.orientation&&screen.orientation.lock) screen.orientation.lock('landscape').catch(()=>{});
+}
+
+// ══════════════════════════════════════════
+// PENALTY LOGIC
+// ══════════════════════════════════════════
+function initPenalty(){
+ document.getElementById('h-stage').textContent='PENALTY SHOOTOUT';
+ GS.pen={kicks:[],userScore:0,aiScore:0,phase:'aim',anim:null,
+   animStart:0,animDur:920,resultStart:0,resultDur:1100,indiaStart:0,indiaDur:1700};
+ updateHUD();
+}
+function updateHUD(){
+ // Always shows player's team score vs India score
+ document.getElementById('h-score').textContent=`${GS.pen.userScore} – ${GS.pen.aiScore}`;
+ const uk=GS.pen.kicks.filter(k=>k.isUser).length;
+ document.getElementById('h-kicks').textContent=`KICK ${Math.min(uk+1,5)}/5`;
+}
+function keeperDive(aimed,saved){
+ if(saved) return aimed;
+ const o=['L','C','R'].filter(x=>x!==aimed);
+ return o[Math.floor(Math.random()*o.length)];
+}
+function shoot(aimed){
+ if(GS.pen.phase!=='aim') return;
+ const saved=Math.random()<.28,kd=keeperDive(aimed,saved),scored=!saved;
+ GS.pen.kicks.push({isUser:true,aimed,keeperDived:kd,scored});
+ if(scored) GS.pen.userScore++;
+ GS.pen.anim={isUser:true,aimed,keeperDived:kd,scored};
+ GS.pen.animStart=GS.now;GS.pen.phase='animating';
+}
+function triggerIndia(ts){
+ const a=['L','C','R'][Math.floor(Math.random()*3)];
+ const sv=Math.random()<.28,kd=keeperDive(a,sv),sc=!sv;
+ GS.pen.kicks.push({isUser:false,aimed:a,keeperDived:kd,scored:sc});
+ if(sc) GS.pen.aiScore++;
+ GS.pen.indiaStart=ts;GS.pen.phase='india_delay';
+ setTimeout(()=>{
+   flash(sc?`${INDIA.f} India SCORES!`:`${INDIA.f} India misses 🧤`,sc?'#FF9933':P.green,1200);
+   if(sc){setZ(['S-OUT','S-MID','S-LOW'],'ai_cheer');pCrowdMood='indiaGoal';}
+   else{setZ(['N-OUT','N-MID'],'cheer');pCrowdMood='indiaMiss';}
+ },250);
+}
+function tickPenalty(ts){
+ const p=GS.pen;
+ if(p.phase==='animating'){
+   if(ts-p.animStart>=p.animDur){
+     p.phase='result';p.resultStart=ts;
+     const k=p.kicks[p.kicks.length-1];
+     flash(k.scored?'⚽  GOAL!':'🧤  SAVED!',k.scored?P.gold:P.red);
+     if(k.scored){setZ(['N-OUT','N-MID','N-LOW'],'cheer');pCrowdMood='userGoal';}
+     else{setZ(['S-OUT','S-MID'],'cheer');pCrowdMood='userMiss';}
+   }
+   return;
+ }
+ if(p.phase==='result'){
+   if(ts-p.resultStart>=p.resultDur){
+     unflash();resetZ();
+     const uc=p.kicks.filter(k=>k.isUser).length;
+     const ac=p.kicks.filter(k=>!k.isUser).length;
+     if(ac<5) triggerIndia(ts);
+     else if(uc<5){p.phase='aim';pCrowdMood='tense';updateHUD();}
+     else penDone();
+   }
+   return;
+ }
+ if(p.phase==='india_delay'){
+   if(ts-p.indiaStart>=p.indiaDur){
+     unflash();resetZ();pCrowdMood='tense';
+     const uc=p.kicks.filter(k=>k.isUser).length;
+     if(uc<5){p.phase='aim';updateHUD();}
+     else penDone();
+   }
+   return;
+ }
+}
+function penDone(){
+ GS.pen.phase='done';
+ // Make sure HUD score reflects final state
+ updateHUD();
+ document.getElementById('h-stage').textContent='FULL TIME';
+ const us=GS.pen.userScore,as=GS.pen.aiScore;
+ document.getElementById('h-kicks').textContent=us>as?'🏆 WIN':us===as?'DRAW':'';
+ document.getElementById('s3-cta').style.display='block';
+}
+
+// ══════════════════════════════════════════
+// TIFO
+// ══════════════════════════════════════════
+window.startTifo=function(){
+ document.getElementById('s3-cta').style.display='none';
+ GS.stage=2;
+ document.getElementById('h-stage').textContent='TIFO REVEAL';
+ document.getElementById('h-kicks').textContent='🏆 MetLife';
+ resetZ();pCrowdMood='idle';
+ GS.tifo={phase:'revealing',row:0,lastRow:0,ROW_MS:155,done:false};
+};
+function tickTifo(ts){
+ if(GS.stage!==2) return;
+ const tf=GS.tifo;if(tf.phase==='idle') return;
+ if(ts-tf.lastRow<tf.ROW_MS) return;
+ tf.lastRow=ts;
+ if(tf.row<TG_ROWS){tf.row++;}
+ else if(tf.phase==='revealing'){
+   tf.phase='pulsing';
+   // Build final score text — always player's team vs India
+   const us=GS.pen.userScore,as=GS.pen.aiScore;
+   const medal=us>as?'🏆 '+GS.team.n+' WIN':as>us?'🏆 India WIN':'DRAW';
+   document.getElementById('final-score-txt').textContent=
+     `${GS.team.f} ${GS.team.n}  ${us} – ${as}  ${INDIA.f} India  · ${medal}`;
+   document.getElementById('end-ui').style.display='flex';
+ }
+}
+
+// ══════════════════════════════════════════
+// CANVAS CLICK — penalty aim
+// ══════════════════════════════════════════
+canvas.addEventListener('click',handleClick);
+canvas.addEventListener('touchend',(e)=>{
+ e.preventDefault();
+ const t=e.changedTouches[0];handleClick({clientX:t.clientX,clientY:t.clientY});
+},{passive:false});
+function handleClick(e){
+ if(GS.stage!==1||GS.pen.phase!=='aim') return;
+ const rect=canvas.getBoundingClientRect();
+ const mx=(e.clientX-rect.left)*(W/rect.width);
+ const my=(e.clientY-rect.top)*(H/rect.height);
+ const{goalLeft:gL,goalRight:gR,goalTop:gT,goalBottom:gB,goalWidth:gW}=PV;
+ if(mx<gL-20||mx>gR+20||my<gT-30||my>gB+30) return;
+ shoot(mx<gL+gW/3?'L':mx<gL+gW*2/3?'C':'R');
+}
+
+// ══════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════
+function setZ(zones,st){zones.forEach(z=>{if(z in zSt)zSt[z]=st;});}
+function resetZ(){ZONE_IDS.forEach(z=>zSt[z]='idle');}
+function flash(txt,color,dur=1100){
+ const f=document.getElementById('flash');
+ document.getElementById('fm').textContent=txt;
+ document.getElementById('fm').style.color=color||P.gold;
+ f.style.opacity='1';clearTimeout(f._t);
+ f._t=setTimeout(()=>f.style.opacity='0',dur);
+}
+function unflash(){document.getElementById('flash').style.opacity='0';}
+function lerp(a,b,t){return a+(b-a)*t;}
+function easeOut(t){return 1-(1-t)*(1-t);}
+function easeIn(t){return t*t;}
+function checkOrientation(){
+ if(GS.stage<-1) return;
+ const land=window.innerWidth>window.innerHeight;
+ document.getElementById('lgate').style.display=GS.stage>=-1&&!land?'flex':'none';
+ if(land) resize();
+}
+window.addEventListener('resize',()=>{if(GS.stage>=-1){resize();checkOrientation();}});
+window.addEventListener('orientationchange',()=>setTimeout(checkOrientation,350));
+
+buildGrid();
+</script>
+</body>
+</html>
