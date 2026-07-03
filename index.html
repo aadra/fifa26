@@ -1,6 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+ <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-DZ126NSHEQ"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-DZ126NSHEQ');
+</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -498,7 +507,7 @@ function drawTifoPitchFX(){
  ctx.fillText(wFlag,s.pX+s.pW/2,s.pY+s.pH/2-20);
  ctx.font=`bold ${Math.min(42,s.pW*.30)}px "Space Mono",monospace`;
  ctx.fillStyle='#F3D9FF';
- ctx.fillText(wName,s.pX+s.pW/2,s.pY+s.pH/2+35);
+ ctx.fillText(wName,s.pX+s.pW/2,s.pY+s.pH/2+25);
  ctx.textAlign='left';ctx.textBaseline='alphabetic';
  ctx.restore();
 }
