@@ -433,7 +433,7 @@ function drawPenAnim(){
  const kx=gL+gW/2;
  const kTarget=pen.anim.keeperDived==='L'?gL+22:pen.anim.keeperDived==='R'?gR-22:kx;
  const kx2=lerp(kx,kTarget,easeIn(Math.min(t*2,1)));
- ctx.fillStyle=P.gold;ctx.font='bold 10px "Courier New",monospace';
+ ctx.fillStyle=P.gold;ctx.font='bold 18px "Courier New",monospace';
  ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('[GK]',kx2,gB-10);
  ctx.textAlign='left';ctx.textBaseline='alphabetic';
 }
