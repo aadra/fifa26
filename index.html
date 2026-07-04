@@ -336,15 +336,15 @@ function drawStadium(){
  ctx.font = `bold ${Math.round(pH*0.075)}px "Space Mono", monospace`;
 ctx.fillStyle = "#FFFFFF";
 
-ctx.fillText(`${GS.team.f} ${GS.team.n.toUpperCase()}`, pcx, pcy + pH*0.02);
+ctx.fillText(`${GS.team.f} ${GS.team.n.toUpperCase()}`, pcx - pW*0.25, pcy+pH*0.20);
 
-ctx.font = `bold ${Math.round(pH*0.05)}px "Space Mono", monospace`;
+ctx.font = `bold ${Math.round(pH*0.10)}px "Space Mono", monospace`;
 ctx.fillStyle = "#FFD966";
-ctx.fillText("VS", pcx, pcy + pH*0.10);
+ctx.fillText("VS", pcx, pcy+pH*0.20);
 
 ctx.font = `bold ${Math.round(pH*0.075)}px "Space Mono", monospace`;
 ctx.fillStyle = "#FFFFFF";
-ctx.fillText("🇮🇳 INDIA", pcx, pcy + pH*0.18);
+ctx.fillText("🇮🇳 INDIA", pcx + pW*0.25, pcy+pH*0.20);
 }
 
 function pickChar(arr, t, ph, speed = 0.0005) {
@@ -626,11 +626,11 @@ function drawTifoPitchFX(){
  const wName=winner?winner.n.toUpperCase():'DRAW',wFlag=winner?winner.f:'🤝';
  ctx.textAlign = 'center';ctx.textBaseline = 'bottom';
  ctx.font = '600 16px "Space Mono", monospace';
- ctx.fillStyle = 'rgba(24,24,23,0.92)';
+ ctx.fillStyle = 'rgba(48,24,23,0.92)';
  ctx.letterSpacing = '2px'; // Ignore if unsupported
  ctx.fillText('FIFA WORLD CUP 2026 CHAMPIONS',s.pX+s.pW/2,s.pY+s.pH/2-20);
  ctx.textAlign='center';ctx.textBaseline='middle';
- ctx.font=`bold ${Math.min(20,s.pW*.25)}px "Space Mono",monospace`;
+ ctx.font=`bold ${Math.min(24,s.pW*.25)}px "Space Mono",monospace`;
  ctx.fillStyle='#FF6FC0';
  ctx.fillText(wFlag,s.pX+s.pW/2,s.pY+s.pH/2-10);
  ctx.font=`bold ${Math.min(28,s.pW*.30)}px "Space Mono",monospace`;
@@ -754,6 +754,7 @@ function shoot(aimed){
 
 track("shot_taken",{
 
+    player: "user",
     team:GS.team.n,
 
     direction:aimed,
@@ -784,9 +785,12 @@ function triggerIndia(ts){
  const sv=Math.random()<.28,kd=keeperDive(a,sv),sc=!sv;
  //GA
  track("india_shot",{
+  player: "india",
     direction: a,
-    goal: sc
+    outcome: sc ? "goal" : "saved",
+    keeper_direction: kd
 });
+
  GS.pen.kicks.push({isUser:false,aimed:a,keeperDived:kd,scored:sc});
  if(sc) GS.pen.aiScore++;
  GS.pen.indiaStart=ts;GS.pen.phase='india_delay';
