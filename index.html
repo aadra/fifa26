@@ -625,17 +625,17 @@ function drawTifoPitchFX(){
  const winner=GS.pen.userScore>GS.pen.aiScore?GS.team:GS.pen.aiScore>GS.pen.userScore?INDIA:null;
  const wName=winner?winner.n.toUpperCase():'DRAW',wFlag=winner?winner.f:'🤝';
  ctx.textAlign = 'center';ctx.textBaseline = 'bottom';
- ctx.font = '600 10px "Space Mono", monospace';
- ctx.fillStyle = 'rgba(248,245,230,0.92)';
+ ctx.font = '600 16px "Space Mono", monospace';
+ ctx.fillStyle = 'rgba(24,24,23,0.92)';
  ctx.letterSpacing = '2px'; // Ignore if unsupported
- ctx.fillText('FIFA WORLD CUP 2026 CHAMPIONS',s.pX+s.pW/2,s.pY+s.pH/2-60);
+ ctx.fillText('FIFA WORLD CUP 2026 CHAMPIONS',s.pX+s.pW/2,s.pY+s.pH/2-20);
  ctx.textAlign='center';ctx.textBaseline='middle';
- ctx.font=`bold ${Math.min(64,s.pW*.25)}px "Space Mono",monospace`;
+ ctx.font=`bold ${Math.min(20,s.pW*.25)}px "Space Mono",monospace`;
  ctx.fillStyle='#FF6FC0';
- ctx.fillText(wFlag,s.pX+s.pW/2,s.pY+s.pH/2-20);
- ctx.font=`bold ${Math.min(42,s.pW*.30)}px "Space Mono",monospace`;
+ ctx.fillText(wFlag,s.pX+s.pW/2,s.pY+s.pH/2-10);
+ ctx.font=`bold ${Math.min(28,s.pW*.30)}px "Space Mono",monospace`;
  ctx.fillStyle='#F3D9FF';
- ctx.fillText(wName,s.pX+s.pW/2,s.pY+s.pH/2+25);
+ ctx.fillText(wName,s.pX+s.pW/2,s.pY+s.pH/2+15);
  ctx.textAlign='left';ctx.textBaseline='alphabetic';
  ctx.restore();
 }
