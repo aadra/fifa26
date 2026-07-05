@@ -298,7 +298,14 @@ function calcPV(){
 // Kaomoji crowd covers ENTIRE canvas (zone='team' on left half, 'india' on right half)
 function buildPerspCells(){
  pCells=[];
- const cW=34,cH=18;
+ // Same approach as the oval stadium crowd: measure the widest face
+ // (including the big-eye featured ones) at actual render size, then
+ // size the grid so no cell can ever crowd into its neighbour.
+ ctx.font='13px "Noto Sans JP","Segoe UI Emoji","Apple Color Emoji",sans-serif';
+ const allFacesP=IDLE.concat(TENSE,CHEER,SAD);
+ let maxWP=0;
+ allFacesP.forEach(f=>{const w=ctx.measureText(f).width;if(w>maxWP)maxWP=w;});
+ const cW=Math.ceil(maxWP)+12,cH=25;
  let rowIdx=0;
  for(let y=52;y<H-4;y+=cH,rowIdx++){
    let colIdx=0;
@@ -333,18 +340,20 @@ function drawStadium(){
  ctx.beginPath();ctx.moveTo(pcx,pY+4);ctx.lineTo(pcx,pY+pH-4);ctx.stroke();
  ctx.beginPath();ctx.arc(pcx,pcy,pH*.15,0,Math.PI*2);ctx.stroke();
  ctx.fillStyle=P.pitchLine;ctx.beginPath();ctx.arc(pcx,pcy,2,0,Math.PI*2);ctx.fill();
- ctx.font = `bold ${Math.round(pH*0.075)}px "Space Mono", monospace`;
+ ctx.textAlign='center';
+ ctx.font = `bold ${Math.max(13,Math.round(pH*0.10))}px "Space Mono", monospace`;
 ctx.fillStyle = "#FFFFFF";
 
 ctx.fillText(`${GS.team.f} ${GS.team.n.toUpperCase()}`, pcx - pW*0.25, pcy+pH*0.20);
 
-ctx.font = `bold ${Math.round(pH*0.10)}px "Space Mono", monospace`;
+ctx.font = `bold ${Math.max(17,Math.round(pH*0.13))}px "Space Mono", monospace`;
 ctx.fillStyle = "#FFD966";
 ctx.fillText("VS", pcx, pcy+pH*0.20);
 
-ctx.font = `bold ${Math.round(pH*0.075)}px "Space Mono", monospace`;
+ctx.font = `bold ${Math.max(13,Math.round(pH*0.10))}px "Space Mono", monospace`;
 ctx.fillStyle = "#FFFFFF";
 ctx.fillText("🇮🇳 INDIA", pcx + pW*0.25, pcy+pH*0.20);
+ctx.textAlign='left';
 }
 
 function pickChar(arr, t, ph, speed = 0.0005) {
@@ -435,7 +444,7 @@ function pMoodChar(c,t,featured){
 function drawPerspCrowd(){
  const t=GS.now;
 
- ctx.textBaseline='middle';
+ ctx.textBaseline='middle';ctx.textAlign='center';
 
  for(const c of pCells){
    if(c.belowSuppressed) continue;
@@ -474,7 +483,7 @@ function drawPerspCrowd(){
    );
  }
 
- ctx.globalAlpha = 1;
+ ctx.globalAlpha = 1;ctx.textAlign='left';
 }
 
 
